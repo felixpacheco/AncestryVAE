@@ -24,7 +24,9 @@ python -m AncestryVAE/src/vae.py
   ``--infile`` path to input vcf file or tensors dir
 
   ``--out`` path to save output
-
+  
+  #### Optional :
+  
   ``--patience`` training patience (default=1000)
 
   ``--max_epochs`` maximum training epochs (default=50)
@@ -55,8 +57,6 @@ python -m AncestryVAE/src/vae.py
   
   ``--model_path`` path to pre-trained model
   
-  #### Optional :
-
 Train VAE from scratch :
 ```
 python -m  --name outputname —infile ... —-out .. -—max_epochs .. —batch_size ... —seed ... —plot
