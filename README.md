@@ -19,41 +19,41 @@ python -m AncestryVAE/src/vae.py
 
   #### Mandatory :
   
-  --name : Name of output files
+  ``--name``  Name of output files
 
-  --infile : path to input vcf file or tensors dir
+  ``--infile`` path to input vcf file or tensors dir
 
-  --out : path to save output
+  ``--out`` path to save output
 
-  --patience : training patience (default=1000)
+  ``--patience`` training patience (default=1000)
 
-  --max_epochs : maximum training epochs (default=50)
+  ``--max_epochs`` maximum training epochs (default=50)
 
-  --batch_size : Batch size (default=20)
+  ``--batch_size`` Batch size (default=20)
 
-  --save_model : Save model together with analysis of training and plots
+  ``--save_model`` Save model together with analysis of training and plots
   
-  --cpu : Use CPU instead of GPU (default=False)
+  ``--cpu`` Use CPU instead of GPU (default=False)
   
-  --seed : Seed (deault=1)
+  ``--seed`` Seed (deault=1)
   
-  --train_prop : Proportion of samples to use for training, (default=0.8)
+  ``--train_prop`` Proportion of samples to use for training, (default=0.8)
   
-  --grid_search : Run grid search over network sizes and use the network with minimum test loss (default=False). 
+  ``--grid_search`` Run grid search over network sizes and use the network with minimum test loss (default=False). 
   
-  --depth : Number of hidden layers (default=3).
+  ``--depth`` Number of hidden layers (default=3).
   
-  --width : Nodes per hidden layer (default=1000).
+  ``--width`` Nodes per hidden layer (default=1000).
   
-  --plots : generate an interactive scatterplot of the latent space (default=False, requires -metadata).
+  ``--plots`` generate an interactive scatterplot of the latent space (default=False, requires -metadata).
 
-  --metadata : Path to the tab-delimited metadata file with column "SampleID".
+  ``--metadata`` Path to the tab-delimited metadata file with column "SampleID".
   
-  --extra_annot : extra annotation at the end of the file
+  ``--extra_annot`` extra annotation at the end of the file
   
-  --project_data : Project data on pre-trained model (default=False, requires model_path)
+  ``--project_data`` Project data on pre-trained model (default=False, requires model_path)
   
-  --model_path : path to pre-trained model
+  ``--model_path`` path to pre-trained model
   
   #### Optional :
 
