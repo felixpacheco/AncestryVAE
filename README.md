@@ -40,9 +40,7 @@ python -m AncestryVAE/src/vae.py
   ``--seed`` Seed (deault=1)
   
   ``--train_prop`` Proportion of samples to use for training, (default=0.8)
-  
-  ``--grid_search`` Run grid search over network sizes and use the network with minimum test loss (default=False). 
-  
+    
   ``--depth`` Number of hidden layers (default=3).
   
   ``--width`` Nodes per hidden layer (default=1000).
