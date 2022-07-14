@@ -65,6 +65,8 @@ Project new observations on pre-computed VAE:
 python -m  --name outputname —infile — out ... —max_epochs ...  —batch_size —seed ... —-project_data ... --model_path ...
 ```
 
+
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
