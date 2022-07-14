@@ -8,12 +8,14 @@ AncestryVAE is a git repository to compute VAEs on genotype array data to visual
 git clone https://github.com/felixpacheco/AncestryVAE
 pip install -r AncestryVAE/requirements.txt
 ```
-
+## Dependencies 
+  requirements.txt (pip3 freeze)
+  
 ## Usage
 
 The package can be used to compute latent spaces or to project new observations on a pre-computed VAE (encoder function)
 
-python -m AncestryVAE/src/vae.py 
+python -m AncestryVAE/src/vae.py train
 
 ### Options :
 
@@ -27,15 +29,13 @@ python -m AncestryVAE/src/vae.py
   
   #### Optional :
   
-  ``--patience`` training patience (default=1000)
+  ``--patience`` training patience (default=2)
 
   ``--max_epochs`` maximum training epochs (default=50)
 
   ``--batch_size`` Batch size (default=20)
-
-  ``--save_model`` Save model together with analysis of training and plots
   
-  ``--cpu`` Use CPU instead of GPU (default=False)
+  ``--gpu`` Use GPU instead of CPU (default=False)
   
   ``--seed`` Seed (deault=1)
   
@@ -45,27 +45,43 @@ python -m AncestryVAE/src/vae.py
   
   ``--width`` Nodes per hidden layer (default=1000).
   
-  ``--plots`` generate an interactive scatterplot of the latent space (default=False, requires -metadata).
+  ``--plot`` generate an interactive scatterplot of the latent space (default=False, requires --metadata).
 
   ``--metadata`` Path to the tab-delimited metadata file with column "id" and "ancestry".
   
-  ``--extra_annot`` extra annotation at the end of the file
-  
-  ``--project_data`` Project data on pre-trained model (default=False, requires model_path)
-  
-  ``--model_path`` path to pre-trained model
-  
 Train VAE from scratch :
 ```
-python -m  --name outputname —infile ... —-out .. -—max_epochs .. —batch_size ... —seed ... —plot
+python vae.py train --name myVAE_results —infile dataset1 —-out /Desktop/analysis/VAE
 ```
+
+python AncestryVAE/src/vae.py project
+
+### Options :
+
+  #### Mandatory :
+  
+  ``--name``  Name of output files
+
+  ``--infile`` path to input vcf file or tensors dir
+   
+  ``--model_path`` path to model
+
+  ``--out`` path to save output
+  
+  
+  #### Optional :
+  
+  ``--gpu`` Use GPU instead of CPU (default=False)
+  
+  ``--plot`` generate an interactive scatterplot of the latent space (default=False, requires --metadata).
+
+  ``--metadata`` Path to the tab-delimited metadata file with column "id" and "ancestry".
+
 
 Project new observations on pre-computed VAE:
 ```
-python -m  --name outputname —infile — out ... —max_epochs ...  —batch_size —seed ... —-project_data ... --model_path ...
+python vae.py project   --name myVAE_projection —infile dataset2 —-out /Desktop/analysis/VAE --model_path /path/to/model.pt
 ```
-
-
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
