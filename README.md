@@ -2,7 +2,7 @@
 
 AncestryVAE is a git repository to compute VAEs on genotype array data to visualize genetic data in low dimensions.
 
-![alt text](https://github.com/felixpacheco/AncestryVAE/docs/main/VAE_workflow.png)
+![alt text]([https://github.com/felixpacheco/AncestryVAE/docs/main/VAE_workflow.png](https://github.com/felixpacheco/AncestryVAE/blob/main/docs/VAE_workflow.png))
 
 
 ## Installation
