@@ -49,7 +49,7 @@ python -m AncestryVAE/src/vae.py
   
   ``--plots`` generate an interactive scatterplot of the latent space (default=False, requires -metadata).
 
-  ``--metadata`` Path to the tab-delimited metadata file with column "SampleID".
+  ``--metadata`` Path to the tab-delimited metadata file with column "id" and "label".
   
   ``--extra_annot`` extra annotation at the end of the file
   
