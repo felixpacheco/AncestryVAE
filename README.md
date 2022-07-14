@@ -2,6 +2,9 @@
 
 AncestryVAE is a git repository to compute VAEs on genotype array data to visualize genetic data in low dimensions.
 
+![alt text](https://github.com/felixpacheco/AncestryVAE/docs/main/VAE_workflow.png)
+
+
 ## Installation
 
 ```bash
@@ -14,6 +17,8 @@ pip install -r AncestryVAE/requirements.txt
 ## Usage
 
 The package can be used to compute latent spaces or to project new observations on a pre-computed VAE (encoder function)
+
+## Training from scratch
 
 python -m AncestryVAE/src/vae.py train
 
@@ -53,6 +58,8 @@ Train VAE from scratch :
 ```
 python vae.py train --name myVAE_results —infile dataset1 —-out /Desktop/analysis/VAE
 ```
+
+## Projection of new data on pre-computed model
 
 python AncestryVAE/src/vae.py project
 
