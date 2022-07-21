@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""pop_embedding.py: Implementation of VAEs for the CVD cohort"""
+"""vae.py: Implementation of VAEs, main script"""
 __author__      = "Felix Pacheco"
 
 # Basic libraries
@@ -30,57 +30,53 @@ from torch.utils.data import DataLoader
 ### Argument parser ###
 #######################
 
-args = argument_parser(argv_list=sys.argv[1:])
+train_flag, args = argument_parser(argv_list=sys.argv[1:])
 
 ##################################################
 ### Initialize hyper parameters, CUDA and seed ###
 ##################################################
 
-# Hyperparams
-CUDA = torch.cuda.is_available()
-SEED = args.seed
-BATCH_SIZE = args.batch_size
-EPOCHS = args.max_epochs
-ZDIMS = args.latent_dim
-TRAIN = args.train_prop
-HIDDEN_UNITS = args.width
-HIDDEN_LAYERS = args.depth
-infile = args.infile
-METADATA = args.metadata
-OUT = args.out
-DATASET = args.name
-EXTRA_ANNOT = args.extra_annot
-PLOT = args.plot
-SAVE_MODEL = args.save_model
-PROJECT_DATA = args.project_data
-MODEL_PATH = args.model_path
-CPU = args.cpu
 
-# Set seed and gpu
-device, kwargs = init_gpu(SEED, CUDA, CPU)
 
-###########################################################
-### Interpret input file format (VCF or tensors) ###
-###########################################################
+if train_flag is True:
 
-infile = ingest_data(infile)
+    # Hyperparams
+    CUDA = torch.cuda.is_available()
+    SEED = args.seed
+    BATCH_SIZE = args.batch_size
+    EPOCHS = args.max_epochs
+    ZDIMS = args.latent_dim
+    TRAIN = args.train_prop
+    HIDDEN_UNITS = args.width
+    HIDDEN_LAYERS = args.depth
+    infile = args.infile
+    METADATA = args.metadata
+    OUT = args.out
+    DATASET = args.name
+    PLOT = args.plot
+    GPU = args.gpu
 
-#####################################
-### Map metadata to observations  ###
-#####################################
+    # Set seed and gpu
+    device, kwargs = init_gpu(SEED, CUDA, GPU)
 
-results_id = mk_results_dir(OUT, args)
+    ####################################################
+    ### Interpret input file format (VCF or tensors) ###
+    ####################################################
+    infile = ingest_data(infile)
 
-X, enc_targets, targets, features, metadata, ancestries = get_inputs(infile, args.metadata)
-#X, enc_targets, targets, features, metadata, ancestries = X[0:1000], enc_targets[0:1000], targets[0:1000], features[0:1000], metadata[0:1000], ancestries[0:1000]
+    #####################################
+    ### Map metadata to observations  ###
+    #####################################
 
-if PROJECT_DATA is False:
+    results_id = mk_results_dir(OUT, args, train_flag)
+
+    X, enc_targets, targets, features, metadata, ancestries = get_inputs(infile, args.metadata, args.plot)
+    
     ####################################
     ### Partition train and test set ###
     ####################################
-
-    X_train, X_test, y_train, y_test = split_train_test(X, enc_targets, 0.8, ancestries)
-    
+    print("-- Loading data and splitting train and test set --")
+    X_train, X_test, y_train, y_test = split_train_test(X, enc_targets, 0.8)
     # Define train and test set
     train_set = SNPLoading(data_path=infile, data_files=X_train, targets=y_train)
     test_set = SNPLoading(data_path=infile, data_files=X_test, targets=y_test)
@@ -92,7 +88,7 @@ if PROJECT_DATA is False:
     # Get input features and encoding len of targets
     input_features = train_set.__getitem__(1)[0].shape[0]
     target_enc_len = len(targets)
-
+    print("    Done    ")
     # Call model to device, define optimizer and scheduler
     model = VAE(input_features=input_features, input_batch=BATCH_SIZE, zdims=ZDIMS, hidden_units=HIDDEN_UNITS, hidden_layers=HIDDEN_LAYERS).to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
@@ -101,7 +97,7 @@ if PROJECT_DATA is False:
         optimizer, 
         mode='max',
         factor=0.1, 
-        patience=2, 
+        patience=args.patience, 
         verbose=True)
 
     train_loss_values = []
@@ -117,6 +113,7 @@ if PROJECT_DATA is False:
 
     epochs_save = [1,2,3,4,5,6,7,8,9,10,15,20,35,50]
 
+    print("-- Start training --")
     for epoch in range(1, EPOCHS + 1):
         train_loss_, train_bce_, train_kld_, lr_values, mu_train, targets_train, rec_train  = train(epoch, model, train_loader, CUDA, device, optimizer, scheduler, input_features, BATCH_SIZE,target_enc_len, ZDIMS)
         test_loss_, test_bce_, test_kld_, mu_test, targets_test, rec_test = test(epoch, model, test_loader, CUDA, device, input_features, BATCH_SIZE, target_enc_len, ZDIMS)
@@ -248,8 +245,7 @@ if PROJECT_DATA is False:
                 print("### Training process completed ###")
                 print("### Saving last state of training ###")
 
-                if SAVE_MODEL is True:
-                    torch.save(model.state_dict(), OUT+"/results/"+results_id+"/data/model.pt")
+                torch.save(model.state_dict(), OUT+"/results/"+results_id+"/data/model.pt")
                             
                 save_diagnostics(
                 out=OUT,
@@ -288,9 +284,36 @@ if PROJECT_DATA is False:
 
                 sys.exit(0)
 
-
+    print("     Training finished       ")
 
 else:
+
+    # Hyperparams
+    CUDA = torch.cuda.is_available()
+    infile = args.infile
+    METADATA = args.metadata
+    OUT = args.out
+    DATASET = args.name
+    PLOT = args.plot
+    GPU = args.gpu
+    MODEL_PATH = args.model_path
+
+    # Set seed and gpu
+    device, kwargs = init_gpu(1, CUDA, GPU)
+
+    ####################################################
+    ### Interpret input file format (VCF or tensors) ###
+    ####################################################
+    infile = ingest_data(infile)
+
+    #####################################
+    ### Map metadata to observations  ###
+    #####################################
+
+    results_id = mk_results_dir(OUT, args, train_flag)
+
+    X, enc_targets, targets, features, metadata, ancestries = get_inputs(infile, args.metadata, args.plot)
+
 
     BATCH_SIZE = int(re.search(r'batch(\d+)', MODEL_PATH).group(1))
     ZDIMS = int(re.search(r'zdims(\d+)', MODEL_PATH).group(1))
@@ -311,8 +334,6 @@ else:
     test_loss_, test_bce_, test_kld_, mu_test, targets_test, rec_test = test(1, model, project_loader, CUDA, device, input_features, BATCH_SIZE, target_enc_len, ZDIMS)
 
     # Save test df
-    print(targets)
-    print(targets_test.astype(int))
     targets_test = de_encoding(targets_test.astype(int), targets)
     df_test = pd.DataFrame(mu_test)
     rec_test = np.asarray(rec_test)
@@ -344,6 +365,5 @@ else:
             test_bce_,
             test_kld_, 
             OUT+"/results/"+results_id+"/plots"+"/project_report.png")
-
-    print("projection made")
+    print("     Projection made")
     sys.exit(0)
