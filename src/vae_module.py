@@ -233,7 +233,6 @@ def train(epoch, model, train_loader, CUDA, device, optimizer, scheduler, input_
         else :
             beta = 1.0
             
-        print(beta)
         loss, bce, kld = loss_function(recon_batch, data, imputed_data, mu, logvar, beta, input_features, input_batch, zdims, device)
         reconstruction_error = get_rec_error(recon_batch, data, imputed_data, input_batch, device)
         
@@ -258,12 +257,10 @@ def train(epoch, model, train_loader, CUDA, device, optimizer, scheduler, input_
         mu_ = mu.cpu().detach().numpy()
         #target = _.cpu().detach().numpy()
         target =  np.array(_)
-        print(target)
         rec_error = reconstruction_error.cpu().detach().numpy()
 
         mu_train = np.append(mu_train, mu_, axis=0)
         targets_train = np.append(targets_train,target, axis=0)
-        print(targets_train)
         rec_train = np.append(rec_train,rec_error, axis=0)
 
         print(f"Train epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)}]")
