@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""dataloader.py: script that contains the pytorch tensors loading class """
+"""dataloader.py: script that contains the pytorch tensors loading class"""
 __author__      = "Felix Pacheco"
 
 import torch
