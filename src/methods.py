@@ -1,5 +1,5 @@
 #!/usr/bin/env pythonf
-"""methods.py: script that contains the preprocessing methods prior to loading into pytorch """
+"""methods.py: script that contains supporting functions"""
 
 import os
 import pickle
@@ -18,12 +18,12 @@ from mpl_toolkits.mplot3d import Axes3D
 import regex as re
 import allel
 
-def init_gpu(SEED, CUDA, CPU):
+def init_gpu(SEED, CUDA, GPU):
     """Initialize GPU on pytorch framework
     Parameters
     ----------
     SEED : Seed random state, (int)
-    GPU : Number of GPUs (int)
+    GPU : True/False
     CUDA : Availability of GPU (True/False)
     Returns
     -------
@@ -33,7 +33,7 @@ def init_gpu(SEED, CUDA, CPU):
     torch.manual_seed(SEED)
     
     # Allow use of cpu memory
-    if CUDA and CPU is False:
+    if GPU is True:
         torch.cuda.manual_seed(SEED)
         device = torch.device("cuda" if CUDA else "cpu")
         kwargs = {'num_workers': 1, 'pin_memory': True}
@@ -56,7 +56,8 @@ def ingest_data(infile):
     """
     infile = os.path.normpath(infile)
     if re.search(r"\S+.vcf", infile):
-        # Create dir where to save torch tensors
+        print("-- Reading vcf file and creating torch tensors --")
+        # Create dir where to _zdims torch tensors
         pytorch_tensors = os.path.dirname(infile)+"/pytorch_tensors_"+os.path.basename(infile)[:-4]
         
         try:
@@ -70,7 +71,7 @@ def ingest_data(infile):
                 sys.exit("Error! Creation of the results directory failed")
 
         vcf_to_pt(infile, pytorch_tensors)
-        print(f"vcf file converted to tensors at {pytorch_tensors}")
+        print(f"    Done    ")
         
         return pytorch_tensors+"/"
 
@@ -128,30 +129,48 @@ def vcf_to_pt(inpath, outpath):
     print("--- %s seconds --- for converting vcf to tensors" % (time.time() - start_time))
     return None
 
-def get_inputs(infile, metadata):
+def get_inputs(infile, metadata, plot_flag):
+    """Takes path to input files and metadata and outputs a series of objects 
+    (input data, feature names, targets, metadata, ancestry labels)
+    Parameters
+    ----------
+    infile : path to input files
+    metadat : path to metadata
+    Returns
+    -------
+    X : torch tensor containing the genotype array data
+    enc_targets :
+    targets : 
+    features : ids of each variant
+    metadata : dataframe containing the metadata
+    ancestries : list of labels explaining ancestry
     """
-    """
-
+    # Create list of files in infile
     files = os.listdir(infile)
     files.sort()
-    X = files[:-2]
 
+    X = files[:-2]
     enc_targets = np.array(X).astype(int)
 
     targets = files[-2]
 
+    # open targets file (ids of each file)
     file = open(infile+"/"+targets, 'rb')
     targets = pickle.load(file)
     file.close()
     
+    #open names of each variant
     features = files[-1]
     file = open(infile+"/"+features, 'rb')
     targets = pickle.load(file)
 
-    metadata = pd.read_csv(metadata, sep="\t") 
-    ancestries = metadata[metadata.id.isin(targets)].ancestry
+    if plot_flag is False:
+        return X, enc_targets, targets, features, None, None
 
-    
+    # read metadata dataframe
+    metadata = pd.read_csv(metadata, sep="\t") 
+    # create list of ancestry labels for each input
+    ancestries = metadata[metadata.id.isin(targets)].ancestry
     return X, enc_targets, targets, features, metadata, ancestries
 
 def binary_encoding(list_to_encode):
@@ -180,7 +199,7 @@ def binary_encoding(list_to_encode):
     return encoded_array
 
 
-def split_train_test(X, targets, prop, ancestries):
+def split_train_test(X, targets, prop):
     """Splits X and targets np.arrays into train and test according to prop
     Parameters
     ----------
@@ -201,7 +220,7 @@ def split_train_test(X, targets, prop, ancestries):
     y_train = targets[:int(len(X)*prop)]
     y_test = targets[int(len(X)*prop+1):]
     """
-    X_train, X_test, y_train, y_test = train_test_split(X, targets, train_size= prop, test_size=1-prop, random_state=42, stratify=ancestries)
+    X_train, X_test, y_train, y_test = train_test_split(X, targets, train_size= prop, test_size=1-prop, random_state=42)
     return X_train, X_test, y_train, y_test
 
 
@@ -260,36 +279,11 @@ def de_encoding(enc_targets, target_ids):
     -------
     df              : list of non-encoded target values
     """
-    '''
-    if int_ is True:
-        enc_dict = dict_encoding
-        enc_targets = enc_targets.astype(int).astype(str)
-        cpr_enc = np.vectorize(enc_dict.get)(enc_targets)
-        return cpr_enc
-
-    # If there is only one target we save all the values as one string
-    targets = []
-    if len(enc_targets.shape) == 1:
-        targets = [next(iter(dict_encoding.items()))[1]] * len(enc_targets)
-        return targets
-
-    # If there is more than one target then we de_code the targets
-    enc_targets = tuple(map(tuple,enc_targets))
-    for i in enc_targets:
-        target = dict_encoding[i]
-        targets.append(target)
-    
-    return targets
-    '''
-    #file = open(infile,'r')
-    #target_ids = pickle.load(file)
-    #file.close()
-
     # Index target list with encoded integers
     targets = [target_ids[i] for i in enc_targets]
     return targets
 
-def mk_results_dir(out_path, args):
+def mk_results_dir(out_path, args, train_flag):
     """Take the output path and creates a dir structure to save results
     Parameters
     ----------
@@ -300,7 +294,13 @@ def mk_results_dir(out_path, args):
     -------
     None
     """
-    results_id = f"{args.name}_batch{args.batch_size}_zdims{args.latent_dim}_train{args.train_prop}_hidden{args.width}x{args.depth}_{args.extra_annot}"
+
+    results_id = f"{args.name}_projection"
+    
+    if train_flag is True:
+        results_id = f"{args.name}_batch{args.batch_size}_zdims{args.latent_dim}_train{args.train_prop}_hidden{args.width}x{args.depth}"
+
+
     # Create results dir
     try:
         os.mkdir(out_path+"/results")
@@ -361,7 +361,30 @@ def impute_data(tensor, batch_size):
 
 
 def save_diagnostics(out=None, results_id=None, train_loss_values=None, train_bce=None, train_kld=None, lr_train_values=None, test_loss_values=None,test_bce=None,test_kld=None,cosine_sim_list=None, df_latent_train=None,df_latent_test=None, epoch=None):
+    """Saves loss for training and test(BCE, KLD and their sum), learning rate and
+    cosine similarity between consecutive iterations of the latent space 
+    Parameters
+    ----------
+    out : path to output results (str)
+    results_id : name of the analysis (str)
+    epoch : current epoch
+
+    train_loss_values : list of train loss values until epoch n
+    train_bce : list of train bce loss values until epoch n
+    train_kld : list of train kld loss values until epoch n
+    lr_train_values : list of learning rate values until epoch n
+    df_latent_train : df containing latent spaces values for train set
     
+    test_loss_values : list of test loss values until epoch n
+    test_bce : list of test bce loss values until epoch n
+    test_kld : list of test kld loss values until epoch n
+    df_latent_test: df containing latent spaces values for test set
+    cosine_sim_list : list cosine similarity between consecutive iterations of the latent space 
+
+    Returns
+    -------
+    None 
+    """
     if train_loss_values is not None:
         with open(str(out)+"/results/"+str(results_id)+"/data/train_loss.json", "wb") as fp:
             pickle.dump(train_loss_values, fp, protocol=3)
@@ -405,7 +428,21 @@ def save_diagnostics(out=None, results_id=None, train_loss_values=None, train_bc
 
 
 def training_report(train_loss, bce_train, kld_train, lr_train, cos_sim, out):
+    """Plots a training report
+    Parameters
+    ----------
+    out : path to output results (str)
 
+    train_loss : list of train loss values until epoch n
+    bce_train : list of train bce loss values until epoch n
+    kld_train : list of train kld loss values until epoch n
+    lr_train : list of learning rate values until epoch n
+    cosine_sim : list cosine similarity between consecutive iterations of the latent space 
+
+    Returns
+    -------
+    None 
+    """
     fig, ax = plt.subplots(nrows=2, ncols=2)
     fig.set_size_inches(14, 14)
     # Train loss
@@ -428,19 +465,29 @@ def training_report(train_loss, bce_train, kld_train, lr_train, cos_sim, out):
     plt.savefig(out+".png")
     plt.clf()
 
-
     plt.plot(cos_sim, 'b')
     plt.title('Cosine similarity per epoch')
     plt.xlabel('epochs')
     plt.ylabel('Cosine Similarity')
-
     plt.savefig(out+"_cosine.png")
     plt.clf()
 
     return None
 
 def test_report(test_loss, test_bce, test_kld, out):
+    """Plots a test report
+    Parameters
+    ----------
+    out : path to output results (str)
 
+    test_loss : list of test loss values until epoch n
+    bce_test : list of test bce loss values until epoch n
+    kld_train : list of test kld loss values until epoch n
+
+    Returns
+    -------
+    None 
+    """
     fig, ax = plt.subplots(nrows=2, ncols=2)
     fig.set_size_inches(14, 14)
     # Train loss
@@ -451,8 +498,8 @@ def test_report(test_loss, test_bce, test_kld, out):
     ax[0, 1].plot(test_bce, "g")
     ax[0, 1].set_title("Test reconstruction error")
 
-    # For Tangent Function
-    ax[1, 0].plot(test_bce, "r")
+    # KLD Loss
+    ax[1, 0].plot(test_kld, "r")
     ax[1, 0].set_title("Test KLD")
 
     plt.tight_layout()
@@ -462,6 +509,17 @@ def test_report(test_loss, test_bce, test_kld, out):
     return None
 
 def plot_latent_space(df_latent, metadata, ZDIMS ,out):
+    """Plots either 2d or 3d latent space
+    Parameters
+    ----------
+    out : path to output results (str)
+    df_latent : df containing latent spaces values
+    ZDIMS : integer with number of dimensions
+
+    Returns
+    -------
+    None 
+    """
     fig = plt.gcf()
     
     if ZDIMS == 2 :
@@ -478,6 +536,7 @@ def plot_latent_space(df_latent, metadata, ZDIMS ,out):
         plt.tight_layout()
         plt.savefig(out)
         plt.clf()
+        return None
     
     else :
         fig.set_size_inches(14, 14)
@@ -508,6 +567,8 @@ def plot_latent_space(df_latent, metadata, ZDIMS ,out):
         plt.tight_layout()
         plt.savefig(out)
         plt.clf()
+        return None
+
 
 
 
